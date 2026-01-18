@@ -1,0 +1,76 @@
+log:
+  stdout_log_level: INFO
+
+!include ../shared_config.yaml
+
+apps:
+  - name: cheese-notifier_app
+    app_base_path: .
+    app_module: solace_agent_mesh.agent.sac.app
+
+    broker:
+      <<: *broker_connection
+
+    app_config:
+      namespace: ${NAMESPACE, sam/}
+      supports_streaming: false
+
+      agent_name: "CheeseNotifierAgent"
+      display_name: "Cheese Notifier"
+      model: *general_model
+
+      instruction: |
+        You are CheeseNotifierAgent.
+
+        INPUT:
+        You will receive a structured payload that includes at least:
+        - verdict (SAFE | CAUTION | DISCARD)
+        - reason (one-line explanation)
+
+        OUTPUT (EXACT FORMAT):
+        - If DISCARD: "🚨 Discard recommended: <reason>"
+        - If CAUTION: "⚠️ Caution: <reason>"
+        - If SAFE: "✅ Looks safe: <reason>"
+
+        AUTOMATION RULE (STRICT):
+        - If and only if verdict == DISCARD:
+          call the tool `trigger_overlay_if_discard` with:
+            verdict: "DISCARD"
+            reason: <same reason used above>
+
+        ANTI-LOOP RULES:
+        - Never call Orchestrator.
+        - Never delegate to another agent.
+        - Execute once and return.
+
+      tools:
+        - tool_type: python
+          tool_name: trigger_overlay_if_discard
+          component_module: src.focus_overlay_tool
+          function_name: trigger_overlay_if_discard
+          description: >
+            Triggers a fullscreen desktop focus overlay when the cheese verdict is DISCARD.
+
+      agent_card:
+        description: >
+          Cheese Notifier Agent.
+          Produces a concise safety notification from a cheese verdict.
+          Triggers a local fullscreen overlay when DISCARD is detected.
+        defaultInputModes: ["text"]
+        defaultOutputModes: ["text"]
+        skills:
+          - id: trigger_overlay_if_discard
+            name: Discard Alert Overlay
+            description: >
+              When the cheese verdict is DISCARD, triggers a local fullscreen
+              focus overlay to force user acknowledgement.
+
+      agent_card_publishing:
+        interval_seconds: 10
+
+      agent_discovery:
+        enabled: true
+
+      inter_agent_communication:
+        allow_list: ["OrchestratorAgent"]
+        request_timeout_seconds: 60

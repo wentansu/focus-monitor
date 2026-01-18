@@ -1,0 +1,70 @@
+log:
+  stdout_log_level: INFO
+
+!include ../shared_config.yaml
+
+apps:
+  - name: cheese-logger_app
+    app_base_path: .
+    app_module: solace_agent_mesh.agent.sac.app
+
+    broker:
+      <<: *broker_connection
+
+    app_config:
+      namespace: ${NAMESPACE, sam/}
+      supports_streaming: true
+
+      agent_name: "CheeseLoggerAgent"
+      display_name: "Cheese Logger"
+      model: *general_model
+
+      instruction: |
+        You are CheeseLoggerAgent. You only do ONE job:
+        append a log entry to an artifact file named "cheese_log.md".
+
+        INPUT:
+        You will receive a structured payload (cheese details + verdict).
+
+        OUTPUT:
+        - Confirm you logged it (one short sentence).
+        - Do not do safety reasoning (that is Checker’s job).
+
+        ANTI-LOOP RULE:
+        - Never call Orchestrator.
+        - Never delegate to any other agent.
+        - Return once.
+
+        LOG FORMAT (append to cheese_log.md):
+        ### <timestamp-like text if available, otherwise "Entry">
+        - Cheese: <type>
+        - Days open: <n>
+        - Storage: <text>
+        - Smell: <text>
+        - Mold: <text>
+        - Texture: <text>
+        - Verdict: <SAFE/CAUTION/DISCARD>
+        - Notes: <text>
+
+      tools:
+        - tool_type: builtin-group
+          group_name: artifact_management
+
+      artifact_service: *default_artifact_service
+
+      agent_card:
+        description: >
+          Cheese Logger Agent - appends cheese check results to cheese_log.md.
+          Use after CheeseCheckerAgent produces a verdict and payload that should be recorded.
+        defaultInputModes: ["text"]
+        defaultOutputModes: ["text", "file"]
+
+      agent_card_publishing:
+        interval_seconds: 10
+
+      agent_discovery:
+        enabled: true
+
+      inter_agent_communication:
+        allow_list: ["OrchestratorAgent"]
+        request_timeout_seconds: 60

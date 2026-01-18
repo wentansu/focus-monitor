@@ -1,0 +1,6 @@
+[MAIN] Manual run (no args) -> showing overlay
+[OVERLAY] Starting overlay. reason=''
+[MAIN] Manual run (no args) -> showing overlay
+[OVERLAY] Starting overlay. reason=''
+[MAIN] Manual run (no args) -> showing overlay
+[OVERLAY] Starting overlay. reason=''

@@ -1,0 +1,68 @@
+log:
+  stdout_log_level: INFO
+
+!include ../shared_config.yaml
+
+apps:
+  - name: cheese-checker_app
+    app_base_path: .
+    app_module: solace_agent_mesh.agent.sac.app
+
+    broker:
+      <<: *broker_connection
+
+    app_config:
+      namespace: ${NAMESPACE, sam/}
+      supports_streaming: true
+
+      agent_name: "CheeseCheckerAgent"
+      display_name: "Cheese Checker"
+      model: *general_model
+
+      instruction: |
+        You are CheeseCheckerAgent. You decide whether a cheese is SAFE / CAUTION / DISCARD.
+
+        INPUT FORMAT (user will provide):
+        - Cheese type
+        - Days since opened
+        - Storage (refrigerated? sealed?)
+        - Smell
+        - Mold (none/white/blue/green/black)
+        - Texture
+        - User notes
+
+        OUTPUT FORMAT (MUST follow exactly):
+        1) Verdict: SAFE | CAUTION | DISCARD
+        2) Reason (1-3 bullets)
+        3) What to do next (1-3 bullets)
+        4) Payload for logger + notifier (YAML block)
+
+        CRITICAL ANTI-LOOP RULES:
+        - DO NOT call or re-route through Orchestrator.
+        - DO NOT delegate to Orchestrator at any point.
+        - If logging/notification is needed, explicitly say:
+          "CheeseLoggerAgent should log the payload below"
+          "CheeseNotifierAgent should notify using the payload below"
+        - Return once. No second pass.
+
+        DECISION RULES (simple):
+        - DISCARD if: sour/rotten smell + slimy texture OR any suspicious mold (green/black/pink) OR "ammonia" on soft cheese.
+        - CAUTION if: borderline age, slight smell change, uncertain storage, or user unsure; recommend discard if risk.
+        - SAFE if: stored properly, normal smell, no mold, normal texture and within typical time.
+
+      agent_card:
+        description: >
+          Cheese Checker Agent - evaluates cheese spoilage risk and returns SAFE/CAUTION/DISCARD.
+          Use when the user asks "is this cheese safe?" or provides cheese storage/smell/mold/texture details.
+        defaultInputModes: ["text"]
+        defaultOutputModes: ["text"]
+
+      agent_card_publishing:
+        interval_seconds: 10
+
+      agent_discovery:
+        enabled: true
+
+      inter_agent_communication:
+        allow_list: ["OrchestratorAgent"]
+        request_timeout_seconds: 60
