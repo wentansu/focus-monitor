@@ -20,6 +20,7 @@ def test_webui_connection():
         "method": "message/stream",
         "params": {
             "message": {
+                "messageId": f"test-{datetime.now().strftime('%Y%m%d%H%M%S')}",
                 "role": "user",
                 "kind": "message",
                 "parts": [
@@ -37,7 +38,9 @@ Test data:
 If you're seeing this message, the integration is working correctly!"""
                     }
                 ],
-                "metadata": {}
+                "metadata": {
+                    "agent_name": "OrchestratorAgent"
+                }
             }
         }
     }
@@ -59,8 +62,61 @@ If you're seeing this message, the integration is working correctly!"""
         print(f"Response Headers: {dict(response.headers)}")
         
         if response.status_code == 200:
-            print("\n✅ SUCCESS! The WebUI API is reachable and accepting messages.")
-            print("\nCheck the WebUI at http://localhost:8000 to see your test message.")
+            print("\n✅ Task submitted successfully.")
+            response_json = response.json()
+            task_id = response_json.get("result", {}).get("id")
+            
+            if not task_id:
+                print("❌ FAILED: No task ID returned in response")
+                print(f"Response body: {response_json}")
+                return False
+                
+            print(f"Task ID: {task_id}")
+            
+            # Step 2: Subscribe to SSE stream
+            sse_url = f"http://localhost:8000/api/v1/sse/subscribe/{task_id}"
+            print(f"\nSubscribing to SSE stream at: {sse_url}")
+            
+            try:
+                sse_response = requests.get(sse_url, stream=True, timeout=30)
+                if sse_response.status_code == 200:
+                    print("✅ SSE Connection established. Listening for events...")
+                    print("="*50)
+                    
+                    for line in sse_response.iter_lines():
+                        if line:
+                            decoded_line = line.decode('utf-8')
+                            if decoded_line.startswith("data: "):
+                                data_str = decoded_line[6:]
+                                try:
+                                    data = json.loads(data_str)
+                                    # Print the raw event for debugging
+                                    # print(f"Event: {json.dumps(data, indent=2)}")
+                                    
+                                    # Check for text parts in the message
+                                    if 'result' in data and 'message' in data['result']:
+                                        msg = data['result']['message']
+                                        if 'parts' in msg:
+                                            for part in msg['parts']:
+                                                if part['kind'] == 'text':
+                                                    print(part['text'], end="", flush=True)
+                                    
+                                    # Check for final task response
+                                    if 'result' in data and data['result'].get('kind') == 'task':
+                                        print("\n\n✅ Task completed.")
+                                        break
+                                        
+                                except json.JSONDecodeError:
+                                    print(f"Failed to decode JSON: {data_str}")
+                else:
+                    print(f"❌ SSE Subscription failed with status {sse_response.status_code}")
+                    print(f"Response: {sse_response.text}")
+                    return False
+                    
+            except Exception as e:
+                print(f"❌ Error during SSE streaming: {e}")
+                return False
+
             return True
         else:
             print(f"\n❌ FAILED with status code {response.status_code}")

@@ -104,41 +104,109 @@ Please analyze this heart rate data and provide health insights."""
         log.info(f"{log_id} Sending {len(bpm_readings)} readings to orchestrator")
         log.debug(f"{log_id} Avg BPM: {avg_bpm:.1f}, Range: {min_bpm:.1f}-{max_bpm:.1f}")
         
-        # Enable streaming to get the proper response
+        # Step 1: Submit task (non-streaming)
         response = requests.post(
             WEBUI_API_URL,
             json=payload,
             headers={"Content-Type": "application/json"},
-            timeout=30,
-            stream=True 
+            timeout=30
         )
         
         if response.status_code == 200:
-            log.info(f"{log_id} Successfully sent data to orchestrator")
-            print("\n" + "="*50)
-            print("🏥 ORCHESTRATOR ANALYSIS")
-            print("="*50)
+            response_json = response.json()
+            task_id = response_json.get("result", {}).get("id")
             
-            # Read and print the streaming response
-            full_response = ""
-            for line in response.iter_lines():
-                if line:
-                    try:
-                        # Parse the JSON-RPC response
-                        data = json.loads(line.decode('utf-8'))
-                        # Extract text content if available
-                        if 'result' in data and 'message' in data['result']:
-                            msg = data['result']['message']
-                            if 'parts' in msg:
-                                for part in msg['parts']:
-                                    if part['kind'] == 'text':
-                                        text = part['text']
-                                        print(text, end="", flush=True)
-                                        full_response += text
-                    except Exception:
-                        pass
-            print("\n" + "="*50 + "\n")
-            return True
+            if not task_id:
+                log.error(f"{log_id} No task ID returned in response")
+                return False
+                
+            log.info(f"{log_id} Task submitted successfully. Task ID: {task_id}")
+            
+            # Step 2: Subscribe to SSE stream
+            sse_url = WEBUI_API_URL.replace("/api/v1/message:stream", f"/api/v1/sse/subscribe/{task_id}")
+            # Correct logic if the URL structure is different, but based on default this works.
+            # Safer to construct from base if possible, but let's assume standard path for now or split string.
+            # Actually, let's just make it robust.
+            base_url = WEBUI_API_URL.split("/api/v1/")[0]
+            sse_url = f"{base_url}/api/v1/sse/subscribe/{task_id}"
+            
+            log.info(f"{log_id} Subscribing to SSE stream at {sse_url}")
+            
+            sse_response = requests.get(sse_url, stream=True, timeout=30)
+            
+            if sse_response.status_code == 200:
+                print("\n" + "="*50)
+                print("🏥 ORCHESTRATOR ANALYSIS")
+                print("="*50)
+                
+                full_response = ""
+                for line in sse_response.iter_lines():
+                    if line:
+                        try:
+                            decoded_line = line.decode('utf-8')
+                            if decoded_line.startswith("data: "):
+                                data_str = decoded_line[6:]
+                                data = json.loads(data_str)
+                                
+                                # Extract text content from different event types
+                                if 'result' in data:
+                                    result = data['result']
+                                    
+                                    # Try to find message in different locations
+                                    msg = None
+                                    
+                                    # For status-update events: result.status.message
+                                    if 'status' in result and 'message' in result['status']:
+                                        msg = result['status']['message']
+                                    # For direct message events: result.message
+                                    elif 'message' in result:
+                                        msg = result['message']
+                                    
+                                    # Extract text from message parts
+                                    if msg and 'parts' in msg:
+                                        for part in msg['parts']:
+                                            # Direct text content
+                                            if part.get('kind') == 'text':
+                                                text = part['text']
+                                                print(text, end="", flush=True)
+                                                full_response += text
+                                            
+                                            # Data parts (status updates, tool invocations, LLM responses)
+                                            elif part.get('kind') == 'data' and 'data' in part:
+                                                data_content = part['data']
+                                                
+                                                # Status update text
+                                                if data_content.get('type') == 'agent_progress_update':
+                                                    status_text = data_content.get('status_text', '')
+                                                    if status_text:
+                                                        print(f"\n[Status] {status_text}\n", flush=True)
+                                                        full_response += f"\n{status_text}\n"
+                                                
+                                                # LLM response content
+                                                elif data_content.get('type') == 'llm_response':
+                                                    llm_data = data_content.get('data', {})
+                                                    content = llm_data.get('content', {})
+                                                    content_parts = content.get('parts', [])
+                                                    
+                                                    for content_part in content_parts:
+                                                        # Extract text from LLM response parts
+                                                        if 'text' in content_part:
+                                                            text = content_part['text']
+                                                            # Skip status_update embeds (already shown)
+                                                            if not text.startswith('«status_update:'):
+                                                                print(text, end="", flush=True)
+                                                                full_response += text
+                                    
+                                    # Check for final task response
+                                    if result.get('kind') == 'task':
+                                        break
+                        except Exception as e:
+                            log.debug(f"{log_id} Error parsing SSE line: {e}")
+                print("\n" + "="*50 + "\n")
+                return True
+            else:
+                log.error(f"{log_id} SSE Subscription failed: {sse_response.status_code}")
+                return False
         else:
             log.error(f"{log_id} Failed with status {response.status_code}: {response.text}")
             return False
