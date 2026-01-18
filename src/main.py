@@ -205,6 +205,26 @@ Please analyze this heart rate data and provide health insights."""
                             log.debug(f"{log_id} Error parsing SSE line: {e}")
                 print("\n" + "="*50 + "\n")
                 
+                # Save response to file for Streamlit dashboard
+                try:
+                    response_data = {
+                        'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                        'response': full_response,
+                        'distracted': full_response.strip().upper().count("YES") > 0,
+                        'bpm_stats': {
+                            'avg': float(avg_bpm),
+                            'min': float(min_bpm),
+                            'max': float(max_bpm),
+                            'std': float(std_bpm)
+                        }
+                    }
+                    response_file = os.path.join(os.path.dirname(__file__), "latest_response.json")
+                    with open(response_file, 'w') as f:
+                        json.dump(response_data, f, indent=2)
+                    log.debug(f"{log_id} Saved response to {response_file}")
+                except Exception as save_error:
+                    log.error(f"{log_id} Failed to save response: {save_error}")
+                
                 # Check if response indicates distraction (starts with YES)
                 if full_response.strip().count("YES") > 0:
                     log.warning(f"{log_id} DISTRACTION DETECTED - Triggering focus overlay")
@@ -358,7 +378,7 @@ while (True):
         cv2.putText(frame, "Calculating BPM...", loadingTextLocation, font, fontScale, fontColor, lineType)
 
     if len(sys.argv) != 2:
-        cv2.imshow("Webcam Heart Rate Monitor", frame)
+        # cv2.imshow("Webcam Heart Rate Monitor", frame)  # Disabled - running headlessly
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
