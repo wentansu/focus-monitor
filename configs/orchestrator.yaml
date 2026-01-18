@@ -36,6 +36,11 @@ apps:
         - You must then review the list of artifacts and return the ones that are important for the user by using the `signal_artifact_for_return` tool.
         - Provide regular progress updates using `status_update` embed directives, especially before initiating any tool call.
 
+        Response Format Guidelines:
+        - When delegating to an agent that returns a structured response (like YES/NO followed by explanation), preserve the exact format and structure of the agent's response.
+        - If an agent's response starts with YES or NO, return it exactly as received without adding introductory text, commentary, or reformatting.
+        - Do not add phrases like "The agent says..." or "According to the analysis..." - just return the agent's response directly.
+
       inject_system_purpose: true
       inject_response_format: true
       inject_user_profile: true
