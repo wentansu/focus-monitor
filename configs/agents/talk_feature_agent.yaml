@@ -1,0 +1,43 @@
+log:
+  stdout_log_level: INFO
+
+apps:
+  - name: talk-feature-agent-app
+    app_module: solace_agent_mesh.agent.sac.app
+
+    broker:
+      broker_url: ${SOLACE_BROKER_URL}
+      broker_vpn: ${SOLACE_BROKER_VPN}
+      broker_username: ${SOLACE_BROKER_USERNAME}
+      broker_password: ${SOLACE_BROKER_PASSWORD}
+
+    app_config:
+      namespace: ${NAMESPACE}
+      model: ${LLM_SERVICE_GENERAL_MODEL_NAME}
+
+      agent_name: "TalkFeatureAgent"
+      display_name: "Talking Feature Extractor"
+      supports_streaming: false
+
+      instruction: |
+        Output JSON only.
+        Extract talking features and return:
+        {
+          "session_id": "...",
+          "timestamp": "...",
+          "talk_events_per_min": 0,
+          "talking_ratio": 0.0,
+          "quality": "ok|low"
+        }
+
+      agent_card:
+        description: "Extracts talking features from talkCount/talkingHistory."
+        defaultInputModes: ["application/json"]
+        defaultOutputModes: ["application/json"]
+        skills:
+          - id: "talk_features"
+            name: "Talk Feature Extraction"
+            description: "Computes talk frequency and ratio."
+
+      agent_card_publishing:
+        interval_seconds: 10

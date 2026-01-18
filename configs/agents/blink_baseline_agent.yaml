@@ -1,0 +1,47 @@
+log:
+  stdout_log_level: INFO
+
+apps:
+  - name: blink-baseline-agent-app
+    app_module: solace_agent_mesh.agent.sac.app
+
+    broker:
+      broker_url: ${SOLACE_BROKER_URL}
+      broker_vpn: ${SOLACE_BROKER_VPN}
+      broker_username: ${SOLACE_BROKER_USERNAME}
+      broker_password: ${SOLACE_BROKER_PASSWORD}
+
+    app_config:
+      namespace: ${NAMESPACE}
+      model: ${LLM_SERVICE_GENERAL_MODEL_NAME}
+
+      agent_name: "BlinkBaselineAgent"
+      display_name: "Blink Baseline Comparator"
+      supports_streaming: false
+
+      instruction: |
+        Output JSON only.
+        Maintain baseline blink rate and compare current to baseline.
+        Return:
+        {
+          "session_id": "...",
+          "timestamp": "...",
+          "baseline_blinks_per_min": 0,
+          "current_blinks_per_min": 0,
+          "delta": 0,
+          "delta_pct": 0.0,
+          "status": "normal|elevated|suppressed|unknown",
+          "confidence": 0.0
+        }
+
+      agent_card:
+        description: "Tracks blink baseline per session and returns deltas."
+        defaultInputModes: ["application/json"]
+        defaultOutputModes: ["application/json"]
+        skills:
+          - id: "blink_baseline_compare"
+            name: "Blink Baseline Compare"
+            description: "Updates baseline and reports deviation."
+
+      agent_card_publishing:
+        interval_seconds: 10

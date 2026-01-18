@@ -1,0 +1,44 @@
+log:
+  stdout_log_level: INFO
+
+apps:
+  - name: hr-baseline-agent-app
+    app_module: solace_agent_mesh.agent.sac.app
+
+    broker:
+      broker_url: ${SOLACE_BROKER_URL}
+      broker_vpn: ${SOLACE_BROKER_VPN}
+      broker_username: ${SOLACE_BROKER_USERNAME}
+      broker_password: ${SOLACE_BROKER_PASSWORD}
+
+    app_config:
+      namespace: ${NAMESPACE}
+      model: ${LLM_SERVICE_GENERAL_MODEL_NAME}
+
+      agent_name: "HeartRateBaselineAgent"
+      display_name: "HR Baseline Tracker"
+      supports_streaming: false
+
+      instruction: |
+        Output JSON only.
+        Track resting HR baseline and return:
+        {
+          "session_id": "...",
+          "timestamp": "...",
+          "baseline_hr": 0,
+          "current_hr": 0,
+          "delta": 0,
+          "confidence": 0.0
+        }
+
+      agent_card:
+        description: "Tracks resting HR baseline per session."
+        defaultInputModes: ["application/json"]
+        defaultOutputModes: ["application/json"]
+        skills:
+          - id: "hr_baseline"
+            name: "HR Baseline"
+            description: "Returns baseline HR and delta."
+
+      agent_card_publishing:
+        interval_seconds: 10

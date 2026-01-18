@@ -1,0 +1,44 @@
+log:
+  stdout_log_level: INFO
+
+apps:
+  - name: talk-attention-agent-app
+    app_module: solace_agent_mesh.agent.sac.app
+
+    broker:
+      broker_url: ${SOLACE_BROKER_URL}
+      broker_vpn: ${SOLACE_BROKER_VPN}
+      broker_username: ${SOLACE_BROKER_USERNAME}
+      broker_password: ${SOLACE_BROKER_PASSWORD}
+
+    app_config:
+      namespace: ${NAMESPACE}
+      model: ${LLM_SERVICE_GENERAL_MODEL_NAME}
+
+      agent_name: "TalkAttentionAgent"
+      display_name: "Talk-Only Attention Decision"
+      supports_streaming: false
+
+      instruction: |
+        Output JSON only.
+        Decide attention using ONLY talking behavior.
+        Return:
+        {
+          "session_id": "...",
+          "timestamp": "...",
+          "attention": "focused|unfocused|uncertain",
+          "score": 0.0,
+          "reason": "..."
+        }
+
+      agent_card:
+        description: "Attention decision from talking-only signals."
+        defaultInputModes: ["application/json"]
+        defaultOutputModes: ["application/json"]
+        skills:
+          - id: "talk_attention_decision"
+            name: "Talk Attention Decision"
+            description: "Returns focused/unfocused/uncertain from talk cues."
+
+      agent_card_publishing:
+        interval_seconds: 10

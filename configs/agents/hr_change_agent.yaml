@@ -1,0 +1,46 @@
+log:
+  stdout_log_level: INFO
+
+apps:
+  - name: hr-change-agent-app
+    app_module: solace_agent_mesh.agent.sac.app
+
+    broker:
+      broker_url: ${SOLACE_BROKER_URL}
+      broker_vpn: ${SOLACE_BROKER_VPN}
+      broker_username: ${SOLACE_BROKER_USERNAME}
+      broker_password: ${SOLACE_BROKER_PASSWORD}
+
+    app_config:
+      namespace: ${NAMESPACE}
+      model: ${LLM_SERVICE_GENERAL_MODEL_NAME}
+
+      agent_name: "HeartRateChangeAgent"
+      display_name: "HR Change Interpreter"
+      supports_streaming: false
+
+      instruction: |
+        Output JSON only.
+        Interpret the Heart Rate delta/change provided in context.
+        Classify the physiological state.
+        Return:
+        {
+          "session_id": "...",
+          "timestamp": "...",
+          "state": "stable|stress_spike|recovery|unknown",
+          "intensity": "low|medium|high",
+          "significance_score": 0.0,
+          "recommendation": "none|take_break|breathe"
+        }
+
+      agent_card:
+        description: "Interprets HR changes (deltas) as stress or recovery states."
+        defaultInputModes: ["application/json"]
+        defaultOutputModes: ["application/json"]
+        skills:
+          - id: "hr_interpretation"
+            name: "HR Interpretation"
+            description: "Classifies HR delta as stress, recovery, or stable."
+
+      agent_card_publishing:
+        interval_seconds: 10

@@ -1,0 +1,46 @@
+log:
+  stdout_log_level: INFO
+
+apps:
+  - name: fusion-attention-agent-app
+    app_module: solace_agent_mesh.agent.sac.app
+
+    broker:
+      broker_url: ${SOLACE_BROKER_URL}
+      broker_vpn: ${SOLACE_BROKER_VPN}
+      broker_username: ${SOLACE_BROKER_USERNAME}
+      broker_password: ${SOLACE_BROKER_PASSWORD}
+
+    app_config:
+      namespace: ${NAMESPACE}
+      model: ${LLM_SERVICE_GENERAL_MODEL_NAME}
+
+      agent_name: "FusionAttentionAgent"
+      display_name: "Multi-Modal Attention Fusion"
+      supports_streaming: false
+
+      instruction: |
+        Output JSON only.
+        You are the FUSION engine. Combine inputs from Blink, Talk, and HR agents.
+        Weigh conflicting signals (e.g., Blink says focused, Talk says distracted).
+        Return:
+        {
+          "session_id": "...",
+          "timestamp": "...",
+          "final_attention_state": "focused|distracted|fatigued|unknown",
+          "confidence_score": 0.0,
+          "contributing_factors": ["blink_rate", "voice_tone", "hr_stress"],
+          "summary": "User is likely focused but showing signs of fatigue."
+        }
+
+      agent_card:
+        description: "Fuses Blink, Talk, and HR signals into a final attention score."
+        defaultInputModes: ["application/json"]
+        defaultOutputModes: ["application/json"]
+        skills:
+          - id: "fusion_decision"
+            name: "Multi-Modal Fusion"
+            description: "Weighted decision from multiple inputs."
+
+      agent_card_publishing:
+        interval_seconds: 10

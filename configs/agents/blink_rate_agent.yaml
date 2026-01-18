@@ -1,0 +1,43 @@
+log:
+  stdout_log_level: INFO
+
+apps:
+  - name: blink-rate-agent-app
+    app_module: solace_agent_mesh.agent.sac.app
+
+    broker:
+      broker_url: ${SOLACE_BROKER_URL}
+      broker_vpn: ${SOLACE_BROKER_VPN}
+      broker_username: ${SOLACE_BROKER_USERNAME}
+      broker_password: ${SOLACE_BROKER_PASSWORD}
+
+    app_config:
+      namespace: ${NAMESPACE}
+      model: ${LLM_SERVICE_GENERAL_MODEL_NAME}
+
+      agent_name: "BlinkRateAgent"
+      display_name: "Blink Feature Extractor"
+      supports_streaming: false
+
+      instruction: |
+        Output JSON only.
+        Compute blink-rate features and return:
+        {
+          "session_id": "...",
+          "timestamp": "...",
+          "blinks_per_min": 0,
+          "irregularity": 0.0,
+          "quality": "ok|low"
+        }
+
+      agent_card:
+        description: "Extracts blink rate features from blink signals."
+        defaultInputModes: ["application/json"]
+        defaultOutputModes: ["application/json"]
+        skills:
+          - id: "blink_features"
+            name: "Blink Feature Extraction"
+            description: "Computes blinks_per_min and irregularity."
+
+      agent_card_publishing:
+        interval_seconds: 10
