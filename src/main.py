@@ -10,6 +10,7 @@ import numpy as np
 import cv2
 import sys
 import requests
+import json
 import os
 from datetime import datetime
 from typing import List, Dict, Any
@@ -103,15 +104,40 @@ Please analyze this heart rate data and provide health insights."""
         log.info(f"{log_id} Sending {len(bpm_readings)} readings to orchestrator")
         log.debug(f"{log_id} Avg BPM: {avg_bpm:.1f}, Range: {min_bpm:.1f}-{max_bpm:.1f}")
         
+        # Enable streaming to get the proper response
         response = requests.post(
             WEBUI_API_URL,
             json=payload,
             headers={"Content-Type": "application/json"},
-            timeout=10
+            timeout=30,
+            stream=True 
         )
         
         if response.status_code == 200:
             log.info(f"{log_id} Successfully sent data to orchestrator")
+            print("\n" + "="*50)
+            print("🏥 ORCHESTRATOR ANALYSIS")
+            print("="*50)
+            
+            # Read and print the streaming response
+            full_response = ""
+            for line in response.iter_lines():
+                if line:
+                    try:
+                        # Parse the JSON-RPC response
+                        data = json.loads(line.decode('utf-8'))
+                        # Extract text content if available
+                        if 'result' in data and 'message' in data['result']:
+                            msg = data['result']['message']
+                            if 'parts' in msg:
+                                for part in msg['parts']:
+                                    if part['kind'] == 'text':
+                                        text = part['text']
+                                        print(text, end="", flush=True)
+                                        full_response += text
+                    except Exception:
+                        pass
+            print("\n" + "="*50 + "\n")
             return True
         else:
             log.error(f"{log_id} Failed with status {response.status_code}: {response.text}")
@@ -139,16 +165,6 @@ videoChannels = 3
 videoFrameRate = 15
 webcam.set(3, realWidth)
 webcam.set(4, realHeight)
-
-# Output Videos
-if len(sys.argv) != 2:
-    originalVideoFilename = "original.mov"
-    originalVideoWriter = cv2.VideoWriter()
-    originalVideoWriter.open(originalVideoFilename, cv2.VideoWriter_fourcc('j', 'p', 'e', 'g'), videoFrameRate, (realWidth, realHeight), True)
-
-outputVideoFilename = "output.mov"
-outputVideoWriter = cv2.VideoWriter()
-outputVideoWriter.open(outputVideoFilename, cv2.VideoWriter_fourcc('j', 'p', 'e', 'g'), videoFrameRate, (realWidth, realHeight), True)
 
 # Color Magnification Parameters
 levels = 3
@@ -193,10 +209,6 @@ while (True):
     ret, frame = webcam.read()
     if ret == False:
         break
-
-    if len(sys.argv) != 2:
-        originalFrame = frame.copy()
-        originalVideoWriter.write(originalFrame)
 
     detectionFrame = frame[videoHeight//2:realHeight-videoHeight//2, videoWidth//2:realWidth-videoWidth//2, :]
 
@@ -261,8 +273,6 @@ while (True):
     else:
         cv2.putText(frame, "Calculating BPM...", loadingTextLocation, font, fontScale, fontColor, lineType)
 
-    outputVideoWriter.write(frame)
-
     if len(sys.argv) != 2:
         cv2.imshow("Webcam Heart Rate Monitor", frame)
 
@@ -271,6 +281,3 @@ while (True):
 
 webcam.release()
 cv2.destroyAllWindows()
-outputVideoWriter.release()
-if len(sys.argv) != 2:
-    originalVideoWriter.release()

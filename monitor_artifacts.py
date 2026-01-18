@@ -44,28 +44,44 @@ def find_new_images():
     # Walk through all subdirectories
     for root, dirs, files in os.walk(ARTIFACT_BASE_PATH):
         for file in files:
-            # Check if it's a version file (numbered file without extension)
-            if file.isdigit() or any(file.endswith(ext) for ext in WATCH_EXTENSIONS):
-                file_path = os.path.join(root, file)
+            file_path = os.path.join(root, file)
+            
+            # Check for versioned files (files without extension that are actually images) 
+            # OR standard image files
+            is_image = False
+            
+            # Case 1: Standard extension
+            if any(file.endswith(ext) for ext in WATCH_EXTENSIONS):
+                is_image = True
                 
-                # Check if this file is in an image artifact directory
-                parent_dir_name = os.path.basename(os.path.dirname(file_path))
-                
-                # Only process files in directories that look like image artifacts
-                if any(ext in parent_dir_name for ext in WATCH_EXTENSIONS):
-                    if file_path not in processed_files:
-                        # Verify it's actually an image by checking file signature
-                        try:
-                            with open(file_path, 'rb') as f:
-                                header = f.read(16)
-                                # Check for PNG, JPEG, or other image signatures
-                                if (header.startswith(b'\x89PNG') or  # PNG
-                                    header.startswith(b'\xff\xd8\xff') or  # JPEG
-                                    header.startswith(b'<svg')):  # SVG
-                                    new_images.append((file_path, parent_dir_name))
-                                    processed_files.add(file_path)
-                        except Exception as e:
-                            log.debug(f"Skipping {file_path}: {e}")
+            # Case 2: Version file (numeric) inside an image-named directory
+            elif file.isdigit() or file == "0":
+                parent_dir = os.path.basename(root)
+                # If parent dir looks like an image filename (e.g. "plot.png")
+                if any(ext in parent_dir for ext in WATCH_EXTENSIONS):
+                    is_image = True
+            
+            if is_image and file_path not in processed_files:
+                try:
+                    # Verify it's actually an image by checking header
+                    with open(file_path, 'rb') as f:
+                        header = f.read(16)
+                        if (header.startswith(b'\x89PNG') or  # PNG
+                            header.startswith(b'\xff\xd8\xff') or  # JPEG
+                            header.startswith(b'<svg')):  # SVG
+                            
+                            # Use parent dir name as artifact name for versioned files
+                            if file.isdigit() or file == "0":
+                                artifact_name = os.path.basename(root)
+                            else:
+                                artifact_name = file
+                                
+                            new_images.append((file_path, artifact_name))
+                            processed_files.add(file_path)
+                            log.info(f"Found new image: {artifact_name} at {file_path}")
+                            
+                except Exception as e:
+                    log.debug(f"Skipping {file_path}: {e}")
     
     return new_images
 
