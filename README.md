@@ -20,6 +20,7 @@ python src/main.py
 ```
 
 ## While Running the Project
+- `Streamlit` should be opened in your browser. If not, follow instructions in the terminal
 - The webcam will turn on after giving permission to access camera
 - There is a 5 second detection time
 - Afterwards, approximately every 10 seconds, the `Streamlit` page will display the latest results

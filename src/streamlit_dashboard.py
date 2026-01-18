@@ -6,12 +6,31 @@ Displays real-time analysis responses from the Solace Agent Mesh
 import streamlit as st
 import json
 import time
+import os
+import signal
+import subprocess
 from pathlib import Path
 from datetime import datetime
 
 # Configuration
 RESPONSE_FILE = Path(__file__).parent / "latest_response.json"
 REFRESH_INTERVAL = 1  # seconds
+
+def shutdown_all_processes():
+    """Shutdown all related processes: SAM, main.py, and this Streamlit app."""
+    try:
+        # Kill SAM process
+        subprocess.run(["pkill", "-f", "sam run configs"], capture_output=True)
+        # Kill main.py (heart rate monitor)
+        subprocess.run(["pkill", "-f", "python3 src/main.py"], capture_output=True)
+        subprocess.run(["pkill", "-f", "python src/main.py"], capture_output=True)
+        # Kill transfer.py
+        subprocess.run(["pkill", "-f", "python3 transfer.py"], capture_output=True)
+        subprocess.run(["pkill", "-f", "python transfer.py"], capture_output=True)
+        # Exit Streamlit
+        os.kill(os.getpid(), signal.SIGTERM)
+    except Exception as e:
+        st.error(f"Error during shutdown: {e}")
 
 # Page config
 st.set_page_config(
@@ -54,6 +73,13 @@ st.markdown("""
 
 # Header
 st.markdown('<div class="main-header">🏥 Heart Rate Monitor Dashboard</div>', unsafe_allow_html=True)
+
+# Exit button at top right
+col1, col2, col3 = st.columns([6, 1, 1])
+with col3:
+    if st.button("🛑 Exit", type="primary"):
+        st.warning("Shutting down...")
+        shutdown_all_processes()
 
 # Create placeholder for dynamic content
 status_placeholder = st.empty()
