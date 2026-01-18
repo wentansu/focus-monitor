@@ -1,0 +1,59 @@
+name: "🔒 Security Vulnerability Report"
+description: "Submit a security issue. Do NOT post public proof-of-concept here unless you’ve been instructed to."
+title: "🔒 [SECURITY] - <short title>"
+labels:
+  - "security"
+body:
+  - type: textarea
+    id: vulnerability_summary
+    attributes:
+      label: "Vulnerability Summary"
+      description: "Brief description of the issue (e.g., “Authentication bypass in token refresh”)."
+      placeholder: "Describe the vulnerability in one or two sentences."
+    validations:
+      required: true
+
+  - type: textarea
+    id: affected_versions
+    attributes:
+      label: "Affected SDK Versions"
+      description: "Which versions are impacted (e.g., ≤ v1.2.3)."
+      placeholder: "e.g., v1.0.0 – v1.2.3"
+    validations:
+      required: true
+
+  - type: textarea
+    id: impact_description
+    attributes:
+      label: "Impact"
+      description: "What could an attacker accomplish? (e.g., “Arbitrary file read”)."
+      placeholder: "Explain the potential impact."
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction_steps
+    attributes:
+      label: "Steps to Reproduce (PoC)"
+      description: "Detailed steps or proof-of-concept (scripts, curl commands, etc.)."
+      placeholder: "1. … 2. …"
+    validations:
+      required: true
+
+  - type: textarea
+    id: suggested_fix
+    attributes:
+      label: "Suggested Fix / Mitigation"
+      description: "If you have a patch or workaround, describe it here."
+      placeholder: "Describe the fix or refer to a PR."
+    validations:
+      required: false
+
+  - type: textarea
+    id: disclosure_timeline
+    attributes:
+      label: "Disclosure Timeline (Optional)"
+      description: "When you first reported, when it was acknowledged, etc."
+      placeholder: "e.g., Reported 05/01/2025, initial response 05/02/2025."
+    validations:
+      required: false

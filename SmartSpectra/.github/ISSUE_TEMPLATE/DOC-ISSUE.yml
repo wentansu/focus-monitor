@@ -1,0 +1,41 @@
+name: "💡 Documentation Change/Update Request"
+description: "Create a new ticket for changes or updates to documentation."
+title: "💡 [DOC REQUEST] - <title>"
+labels:
+  - "docs"
+body:
+  - type: input
+    id: documentation_section
+    attributes:
+      label: "Documentation Section"
+      description: "Which file or page is affected? (e.g., `README.md`, `docs/authentication.md`)"
+      placeholder: "e.g., README.md > Quickstart"
+    validations:
+      required: true
+
+  - type: textarea
+    id: issue_description
+    attributes:
+      label: "Description of Issue"
+      description: "Summarize what’s wrong or missing in the documentation."
+      placeholder: "Describe the problem or missing information"
+    validations:
+      required: true
+
+  - type: textarea
+    id: suggestion_fix
+    attributes:
+      label: "Suggestion / Fix"
+      description: "If you know the correct wording or code snippet, provide it here."
+      placeholder: "Provide the updated text or code snippet"
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: "Additional Context"
+      description: "Explain why this change matters and include links to related issues or PRs."
+      placeholder: "Any other details that might help"
+    validations:
+      required: false

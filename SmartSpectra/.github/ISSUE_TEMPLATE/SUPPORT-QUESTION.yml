@@ -1,0 +1,14 @@
+name: "❓ Support / Usage Question"
+description: "Ask for help using the SDK (configuration, examples, runtime errors)."
+title: "❓ [QUESTION] - <short title>"
+labels:
+  - "support"
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: "Any question you may have, such as how to use specific SDK features, what platforms or features are currently supported or planned in the future, etc."
+      description: "Ask a question about the SmartSpectra SDKs"
+      placeholder: "Describe what you need help with"
+    validations:
+      required: true
