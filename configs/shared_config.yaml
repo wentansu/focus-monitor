@@ -1,0 +1,45 @@
+# Shared configuration for all agents
+# This file is included by all agent configs using !include
+
+shared_config:
+  - broker_connection: &broker_connection
+      dev_mode: ${SOLACE_DEV_MODE, true}
+      broker_url: ${SOLACE_BROKER_URL, ws://localhost:8008}
+      broker_username: ${SOLACE_BROKER_USERNAME, default}
+      broker_password: ${SOLACE_BROKER_PASSWORD, default}
+      broker_vpn: ${SOLACE_BROKER_VPN, default}
+      temporary_queue: ${USE_TEMPORARY_QUEUES, true}
+
+  - models:
+    planning: &planning_model
+      model: ${LLM_SERVICE_PLANNING_MODEL_NAME}
+      api_base: ${LLM_SERVICE_ENDPOINT}
+      api_key: ${LLM_SERVICE_API_KEY}
+
+    general: &general_model
+      model: ${LLM_SERVICE_GENERAL_MODEL_NAME}
+      api_base: ${LLM_SERVICE_ENDPOINT}
+      api_key: ${LLM_SERVICE_API_KEY}
+
+  - services:
+    # Session service - defaults to memory, set PERSISTENCE_TYPE=sql for PostgreSQL persistence
+    session_service: &default_session_service
+      type: "${PERSISTENCE_TYPE, memory}"
+      database_url: "${DATABASE_URL,}"
+      default_behavior: "PERSISTENT"
+
+    # Artifact service - defaults to filesystem, set ARTIFACT_SERVICE_TYPE=s3 for S3 persistence
+    # When using S3, set: S3_BUCKET_NAME, S3_ENDPOINT_URL, S3_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
+    artifact_service: &default_artifact_service
+      type: ${ARTIFACT_SERVICE_TYPE, filesystem}
+      base_path: /tmp/samv2
+      bucket_name: ${S3_BUCKET_NAME}
+      endpoint_url: ${S3_ENDPOINT_URL}
+      region: ${S3_REGION}
+      artifact_scope: namespace
+
+    # Data tools configuration
+    data_tools_config: &default_data_tools_config
+      sqlite_memory_threshold_mb: 100
+      max_result_preview_rows: 50
+      max_result_preview_bytes: 4096

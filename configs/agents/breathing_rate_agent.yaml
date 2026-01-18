@@ -1,0 +1,58 @@
+# Solace Agent Mesh Agent Configuration
+
+log:
+  stdout_log_level: INFO
+  log_file_level: DEBUG
+  log_file: a2a_agent.log
+
+!include ../shared_config.yaml
+
+apps:
+  - name: "BreathingRate__app"
+    app_base_path: .
+    app_module: solace_agent_mesh.agent.sac.app
+    broker:
+      <<: *broker_connection
+
+    app_config:
+      namespace: "${NAMESPACE, sam/}"
+      supports_streaming: true
+      agent_name: "BreathingRate"
+      display_name: "Breathing Rate Agent"
+      model: *general_model 
+
+      instruction: |
+        You are a helpful AI assistant named BreathingRate. Your goal is to analyze continuous data from a sensor. The data you are analyzing is the breathing rate of a user in breaths per minute. For the last 10 data points received, analyze the trend of the breathing rate to determine if the person is paying attention and focusing, or they are distracted. Your output should provide an answer of whether the person is distracted, and an explanation. In your explanation, consider the trend of the data and external sources.
+      
+      tools: 
+        - tool_type: builtin-group
+          group_name: artifact_management
+
+      session_service: 
+        type: "sql"
+        default_behavior: "PERSISTENT"
+        database_url: "${BREATHING_RATE_DATABASE_URL, sqlite:///breathing_rate.db}"
+      artifact_service: *default_artifact_service
+      
+      artifact_handling_mode: "reference"
+      enable_embed_resolution: true
+      enable_artifact_content_instruction: true
+      data_tools_config: *default_data_tools_config
+
+      # Agent Card Definition
+      agent_card:
+        description: |
+          A helpful AI assistant that looks at data of a person's breathing rate and determines if they are distracted.
+        defaultInputModes: [text] 
+        defaultOutputModes: [text, file] 
+        skills: []
+      
+      # Discovery & Communication
+      agent_card_publishing: 
+        interval_seconds: 10
+      agent_discovery: 
+        enabled: true
+      inter_agent_communication:
+        allow_list: ["*"] 
+        deny_list: [] 
+        request_timeout_seconds: 600
