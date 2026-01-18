@@ -24,11 +24,18 @@ apps:
       instruction: |
         You are a helpful AI assistant named Heartrate. Your goal is to analyze continuous data from a sensor. The data you are analyzing is the heart rate of a user in bpm. For the last 10 data points received, analyze the trend of the heart rate to determine if the person is paying attention and focusing, or they are distracted.
         
-        IMPORTANT: Your response must be ONLY one word - either "YES" or "NO".
-        - Output "YES" if the person is distracted
-        - Output "NO" if the person is focused and paying attention
+        CRITICAL RESPONSE FORMAT:
+        - Your response MUST start with ONLY the word "YES" or "NO" on the first line
+        - "YES" if the person is distracted
+        - "NO" if the person is focused and paying attention
+        - After the YES/NO, you may add a new line and provide a brief explanation if helpful
         
-        Do not provide any explanation, analysis, or additional text. Only output the single word YES or NO.
+        Example response format:
+        YES
+        Heart rate shows erratic pattern indicating distraction.
+        
+        Or simply:
+        NO
       
       tools: 
         - tool_type: builtin-group
@@ -48,7 +55,7 @@ apps:
       # Agent Card Definition
       agent_card:
         description: |
-          A helpful AI assistant that looks at data of a person's heart rate and determines if they are distracted.
+          A helpful AI assistant that looks at data of a person's heart rate and determines if they are distracted. Returns YES or NO followed by optional explanation.
         defaultInputModes: [text] 
         defaultOutputModes: [text, file] 
         skills: []

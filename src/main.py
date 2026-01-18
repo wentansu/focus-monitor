@@ -12,6 +12,7 @@ import sys
 import requests
 import json
 import os
+import subprocess
 from datetime import datetime
 from typing import List, Dict, Any
 import logging
@@ -203,6 +204,21 @@ Please analyze this heart rate data and provide health insights."""
                         except Exception as e:
                             log.debug(f"{log_id} Error parsing SSE line: {e}")
                 print("\n" + "="*50 + "\n")
+                
+                # Check if response indicates distraction (starts with YES)
+                if full_response.strip().count("YES") > 0:
+                    log.warning(f"{log_id} DISTRACTION DETECTED - Triggering focus overlay")
+                    try:
+                        overlay_script = os.path.join(os.path.dirname(__file__), "focus_overlay.py")
+                        subprocess.Popen(
+                            [sys.executable, overlay_script, "--overlay"],
+                            close_fds=True,
+                            env=os.environ.copy()
+                        )
+                        log.info(f"{log_id} Focus overlay triggered successfully")
+                    except Exception as overlay_error:
+                        log.error(f"{log_id} Failed to trigger overlay: {overlay_error}")
+                
                 return True
             else:
                 log.error(f"{log_id} SSE Subscription failed: {sse_response.status_code}")
